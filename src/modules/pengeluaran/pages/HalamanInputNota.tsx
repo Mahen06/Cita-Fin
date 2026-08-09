@@ -117,6 +117,7 @@ export function HalamanInputNota() {
     // Sengaja hanya bergantung pada toko. Menambahkan `baris` sebagai
     // ketergantungan membuat efek ini berjalan tiap ketukan huruf, dan
     // setiap kali menimpa harga yang sedang diketik pengguna.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [header.kode_toko])
 
   const rincian = totalRincian(baris)

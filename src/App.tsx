@@ -8,6 +8,7 @@ import type { Peran } from '@/lib/peran'
 import { useAuth } from '@/modules/pengeluaran/hooks/konteksAuth'
 import { PenyediaAuth } from '@/modules/pengeluaran/hooks/useAuth'
 import { HalamanCekHarga } from '@/modules/pengeluaran/pages/HalamanCekHarga'
+import { HalamanDetailNota } from '@/modules/pengeluaran/pages/HalamanDetailNota'
 import { HalamanFormItem } from '@/modules/pengeluaran/pages/HalamanFormItem'
 import { HalamanImporItem } from '@/modules/pengeluaran/pages/HalamanImporItem'
 import { HalamanInputNota } from '@/modules/pengeluaran/pages/HalamanInputNota'
@@ -40,6 +41,20 @@ export default function App() {
             element={
               <Layar judul="Input Nota" syarat={bolehInputNota}>
                 <HalamanInputNota />
+              </Layar>
+            }
+          />
+
+          {/*
+            Rute statis "/nota/baru" di atas menang atas "/nota/:id" —
+            React Router mendahulukan segmen tetap. Detail nota bisa
+            dibuka semua peran; RLS yang menentukan apa yang terbaca.
+          */}
+          <Route
+            path="/nota/:id"
+            element={
+              <Layar judul="Detail Nota">
+                <HalamanDetailNota />
               </Layar>
             }
           />
