@@ -1,0 +1,31 @@
+kode_item,nama_baku,kategori,sub_kategori,satuan_baku,spesifikasi,aktif
+MTL-001,Semen PCC Tiga Roda 50kg,MATERIAL,Semen,sak,PCC 50kg,TRUE
+MTL-002,Semen PCC Gresik 50kg,MATERIAL,Semen,sak,PCC 50kg,TRUE
+MTL-010,Besi Ulir D10 SNI 12m,MATERIAL,Besi,btg,Ulir SNI panjang 12m,TRUE
+MTL-011,Besi Ulir D10 Banci 11m,MATERIAL,Besi,btg,Ulir non-SNI panjang 11m,TRUE
+MTL-012,Besi Ulir D13 SNI 12m,MATERIAL,Besi,btg,Ulir SNI panjang 12m,TRUE
+MTL-013,Besi Polos D8 SNI 12m,MATERIAL,Besi,btg,Polos SNI panjang 12m,TRUE
+MTL-020,Pasir Cor Palaran,MATERIAL,Agregat,m3,,TRUE
+MTL-021,Pasir Pasang Palaran,MATERIAL,Agregat,m3,,TRUE
+MTL-022,Batu Split 1-2,MATERIAL,Agregat,m3,Ukuran 1-2 cm,TRUE
+MTL-030,Bata Merah Press,MATERIAL,Dinding,bh,,TRUE
+MTL-031,Bata Ringan AAC 10cm,MATERIAL,Dinding,m3,Tebal 10cm,TRUE
+MTL-040,Keramik Granit 60x60 Putih Polos,MATERIAL,Lantai,dus,Isi 4 pcs per dus,TRUE
+MTL-050,Cat Tembok Dulux Interior 25kg,MATERIAL,Finishing,pail,,TRUE
+MTL-060,Pipa PVC Rucika AW 4 inch,MATERIAL,Plumbing,btg,Panjang 4m,TRUE
+MTL-070,Kabel NYM 3x2.5 Supreme,MATERIAL,Elektrikal,roll,Isi 50m per roll,TRUE
+MTL-080,Paku Beton 7cm,MATERIAL,Alat Bantu,kg,,TRUE
+MTL-090,Kayu Meranti Bekisting 2x20,MATERIAL,Bekisting,btg,Panjang 4m,TRUE
+MTL-091,Triplek Bekisting 9mm,MATERIAL,Bekisting,lbr,Ukuran 122x244cm,TRUE
+ALT-001,Sewa Molen Beton Harian,ALAT,Sewa,hari,,TRUE
+ALT-002,Sewa Scaffolding Set,ALAT,Sewa,set,Per set per bulan,TRUE
+ALT-010,Mata Gerinda Potong 4 inch,ALAT,Konsumabel,bh,,TRUE
+ALT-011,Mata Bor Beton 10mm,ALAT,Konsumabel,bh,,TRUE
+OPR-010,BBM Solar,OPERASIONAL,Transport,liter,,TRUE
+OPR-011,BBM Pertalite,OPERASIONAL,Transport,liter,,TRUE
+OPR-020,Konsumsi Pekerja,OPERASIONAL,Konsumsi,ls,,TRUE
+OPR-001,Operasional Borongan,OPERASIONAL,Umum,ls,Baris borongan sesuai aturan B3,TRUE
+LNL-001,Ongkos Kirim,LAIN-LAIN,Biaya Nota,ls,Wajib baris terpisah - aturan B5,TRUE
+LNL-002,PPN,LAIN-LAIN,Biaya Nota,ls,Wajib baris terpisah - aturan B5,TRUE
+LNL-003,Diskon Nota,LAIN-LAIN,Biaya Nota,ls,Isi nilai minus - aturan B5,TRUE
+LNL-999,Lain-lain Borongan,LAIN-LAIN,Umum,ls,Baris borongan sesuai aturan B3,TRUE

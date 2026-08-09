@@ -22,6 +22,26 @@ CitaFIN dan modul logistik nantinya **berbagi satu database yang sama**. Jangan 
 
 Aplikasinya boleh berdiri sendiri. Databasenya tidak perlu.
 
+> **Penyimpangan tercatat — 9 Agustus 2026, Sesi 2.**
+>
+> K1 dilepas secara sadar. Saat migrasi hendak dijalankan, proyek Supabase
+> yang ada ternyata sudah berisi modul logistik beserta datanya:
+> `master_barang` 248 baris, `master_vendor` 22, `master_lokasi` 11 proyek,
+> `profiles` 4 pengguna, `harga_vendor` 212 baris harga. Keempat "tabel milik
+> bersama" pada K2 sudah ada lebih dulu dengan nama berbeda.
+>
+> Tersedia tiga jalan: memakai tabel yang sudah ada, membuat tabel kembar di
+> database yang sama, atau memisahkan proyek Supabase. **Pilihan yang diambil
+> adalah memisahkan proyek** — CitaFIN kini memakai proyek `CitaFIN`
+> (`wwrzgewfkvxqcwaguivv`), sedangkan modul logistik tetap di proyek lamanya.
+>
+> Konsekuensi yang harus diingat saat menyusun Tahap 3: penggabungan nanti
+> bukan lagi pekerjaan antarmuka semata seperti dijanjikan di bagian pembuka
+> dokumen ini. Tahap 3 akan mencakup pemindahan pengguna, pengulangan seluruh
+> Auth, dan pemetaan ulang relasi antar dua database — persis pekerjaan yang
+> K1 ditulis untuk dihindari. Rekonsiliasi master item tetap harus dikerjakan,
+> hanya berpindah tempat.
+
 ### K2 — Tabel master dirancang sebagai milik bersama
 
 Empat tabel ini bukan milik CitaFIN, melainkan milik perusahaan:
