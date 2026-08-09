@@ -40,9 +40,21 @@ export const galatEnv: readonly string[] = periksa()
 /** Benar bila seluruh variabel lingkungan yang wajib sudah terisi. */
 export const envSiap = galatEnv.length === 0
 
+/**
+ * Ref proyek Supabase, diambil dari sub-domain URL.
+ * Bukan rahasia — ikut terkirim di setiap permintaan ke Supabase.
+ * Ditampilkan di layar status supaya ketahuan bila aplikasi ternyata
+ * masih menunjuk proyek yang salah setelah variabel lingkungan diganti.
+ */
+function bacaRef(url: string): string {
+  const cocok = /^https:\/\/([^.]+)\./.exec(url)
+  return cocok?.[1] ?? '(tidak terbaca)'
+}
+
 export const env = {
   supabaseUrl: envSiap ? urlMentah : URL_PENGGANTI,
   supabaseAnonKey: envSiap ? anonKeyMentah : KUNCI_PENGGANTI,
+  supabaseRef: envSiap ? bacaRef(urlMentah) : '(belum diatur)',
   mode: import.meta.env.MODE,
   produksi: import.meta.env.PROD,
 } as const

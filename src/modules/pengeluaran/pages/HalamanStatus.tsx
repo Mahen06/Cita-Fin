@@ -5,7 +5,7 @@ import { StatusGalat } from '@/components/StatusGalat'
 import { StatusMemuat } from '@/components/StatusMemuat'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { envSiap, galatEnv } from '@/lib/env'
+import { env, envSiap, galatEnv } from '@/lib/env'
 import { periksaSambungan, type HasilPeriksaSambungan } from '@/lib/supabase'
 
 type Keadaan =
@@ -74,8 +74,10 @@ export function HalamanStatus() {
               <div className="min-w-0">
                 <p className="font-medium">Terhubung</p>
                 <p className="text-muted-foreground text-sm">
-                  Balasan diterima dalam {keadaan.hasil.lamaMs} md. Belum ada
-                  tabel — skema dijalankan pada Sesi 2.
+                  Balasan diterima dalam {keadaan.hasil.lamaMs} md.
+                </p>
+                <p className="text-muted-foreground mt-1 font-mono text-xs break-all">
+                  {env.supabaseRef}
                 </p>
               </div>
             </div>
