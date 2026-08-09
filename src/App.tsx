@@ -3,13 +3,19 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { AppShell } from '@/components/AppShell'
 import { PenjagaRute } from '@/components/PenjagaRute'
-import { bolehInputNota } from '@/lib/peran'
+import { bolehInputNota, bolehKelolaItem, bolehKelolaToko } from '@/lib/peran'
 import type { Peran } from '@/lib/peran'
 import { useAuth } from '@/modules/pengeluaran/hooks/konteksAuth'
 import { PenyediaAuth } from '@/modules/pengeluaran/hooks/useAuth'
 import { HalamanCekHarga } from '@/modules/pengeluaran/pages/HalamanCekHarga'
+import { HalamanFormItem } from '@/modules/pengeluaran/pages/HalamanFormItem'
+import { HalamanImporItem } from '@/modules/pengeluaran/pages/HalamanImporItem'
 import { HalamanInputNota } from '@/modules/pengeluaran/pages/HalamanInputNota'
 import { HalamanLaporan } from '@/modules/pengeluaran/pages/HalamanLaporan'
+import { HalamanMasterData } from '@/modules/pengeluaran/pages/HalamanMasterData'
+import { HalamanMasterItem } from '@/modules/pengeluaran/pages/HalamanMasterItem'
+import { HalamanMasterProyek } from '@/modules/pengeluaran/pages/HalamanMasterProyek'
+import { HalamanMasterToko } from '@/modules/pengeluaran/pages/HalamanMasterToko'
 import { HalamanMasuk } from '@/modules/pengeluaran/pages/HalamanMasuk'
 import { HalamanMenu } from '@/modules/pengeluaran/pages/HalamanMenu'
 
@@ -52,6 +58,74 @@ export default function App() {
             element={
               <Layar judul="Menu">
                 <HalamanMenu />
+              </Layar>
+            }
+          />
+
+          {/*
+            Master Data. Penjaga di sini mencerminkan RLS, bukan
+            menggantikannya: master item dan proyek hanya admin (B7),
+            master toko boleh admin dan finance.
+          */}
+          <Route
+            path="/master"
+            element={
+              <Layar judul="Master Data" syarat={bolehKelolaToko}>
+                <HalamanMasterData />
+              </Layar>
+            }
+          />
+
+          <Route
+            path="/master/item"
+            element={
+              <Layar judul="Master Item" syarat={bolehKelolaToko}>
+                <HalamanMasterItem />
+              </Layar>
+            }
+          />
+
+          <Route
+            path="/master/item/impor"
+            element={
+              <Layar judul="Impor Item" syarat={bolehKelolaItem}>
+                <HalamanImporItem />
+              </Layar>
+            }
+          />
+
+          <Route
+            path="/master/item/baru"
+            element={
+              <Layar judul="Tambah Item" syarat={bolehKelolaItem}>
+                <HalamanFormItem />
+              </Layar>
+            }
+          />
+
+          <Route
+            path="/master/item/:kode"
+            element={
+              <Layar judul="Ubah Item" syarat={bolehKelolaItem}>
+                <HalamanFormItem />
+              </Layar>
+            }
+          />
+
+          <Route
+            path="/master/toko"
+            element={
+              <Layar judul="Master Toko" syarat={bolehKelolaToko}>
+                <HalamanMasterToko />
+              </Layar>
+            }
+          />
+
+          <Route
+            path="/master/proyek"
+            element={
+              <Layar judul="Master Proyek" syarat={bolehKelolaToko}>
+                <HalamanMasterProyek />
               </Layar>
             }
           />

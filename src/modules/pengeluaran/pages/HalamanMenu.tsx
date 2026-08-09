@@ -1,12 +1,14 @@
 import {
   ArrowLeftRight,
   CheckCircle2,
+  ChevronRight,
   Database,
   History,
   LogOut,
   type LucideIcon,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 import { StatusGalat } from '@/components/StatusGalat'
 import { StatusMemuat } from '@/components/StatusMemuat'
@@ -21,27 +23,31 @@ import {
   type Peran,
 } from '@/lib/peran'
 import { periksaSambungan, type HasilPeriksaSambungan } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
 import { useAuth } from '@/modules/pengeluaran/hooks/konteksAuth'
 
 type Entri = {
   label: string
   keterangan: string
   ikon: LucideIcon
+  /** Terisi bila layarnya sudah bisa dibuka. */
+  ke?: string
   syarat?: (peran: Peran) => boolean
 }
 
-/** Isi menu mengikuti SPEK-FITUR Bagian 2. Seluruhnya menyusul per sesi. */
+/** Isi menu mengikuti SPEK-FITUR Bagian 2. Sisanya menyusul per sesi. */
 const ENTRI: Entri[] = [
+  {
+    label: 'Master Data',
+    keterangan: 'Item · Toko · Proyek',
+    ikon: Database,
+    ke: '/master',
+    syarat: bolehKelolaToko,
+  },
   {
     label: 'Banding Toko',
     keterangan: 'Sesi 7',
     ikon: ArrowLeftRight,
-  },
-  {
-    label: 'Master Data',
-    keterangan: 'Sesi 4',
-    ikon: Database,
-    syarat: bolehKelolaToko,
   },
   {
     label: 'Audit Harga',
@@ -79,24 +85,55 @@ export function HalamanMenu() {
           <CardTitle className="text-base">Lainnya</CardTitle>
         </CardHeader>
         <CardContent className="space-y-1">
-          {tampil.map(({ label, keterangan, ikon: Ikon }) => (
-            <div
-              key={label}
-              className="flex min-h-11 items-center justify-between gap-3 py-1"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <Ikon
-                  className="text-muted-foreground size-5 shrink-0"
-                  aria-hidden
-                />
-                <span className="text-muted-foreground text-sm">{label}</span>
+          {tampil.map(({ label, keterangan, ikon: Ikon, ke }) => {
+            const isi = (
+              <>
+                <div className="flex min-w-0 items-center gap-3">
+                  <Ikon
+                    className={cn(
+                      'size-5 shrink-0',
+                      ke ? 'text-primary' : 'text-muted-foreground',
+                    )}
+                    aria-hidden
+                  />
+                  <span
+                    className={cn('text-sm', !ke && 'text-muted-foreground')}
+                  >
+                    {label}
+                  </span>
+                </div>
+                {ke ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground text-xs">
+                      {keterangan}
+                    </span>
+                    <ChevronRight
+                      className="text-muted-foreground size-4"
+                      aria-hidden
+                    />
+                  </div>
+                ) : (
+                  <Badge variant="secondary">{keterangan}</Badge>
+                )}
+              </>
+            )
+
+            const kelas =
+              'flex min-h-11 items-center justify-between gap-3 py-1'
+
+            return ke ? (
+              <Link key={label} to={ke} className={kelas}>
+                {isi}
+              </Link>
+            ) : (
+              <div key={label} className={kelas}>
+                {isi}
               </div>
-              <Badge variant="secondary">{keterangan}</Badge>
-            </div>
-          ))}
+            )
+          })}
           <p className="text-muted-foreground pt-2 text-xs text-balance">
-            Menu di atas muncul sesuai peran Anda dan akan aktif pada sesi
-            pengerjaannya masing-masing.
+            Menu di atas muncul sesuai peran Anda. Yang masih berlabel sesi
+            akan aktif pada sesi pengerjaannya.
           </p>
         </CardContent>
       </Card>

@@ -6,7 +6,10 @@
  *   npx supabase gen types typescript \
  *     --project-id wwrzgewfkvxqcwaguivv > src/lib/database.types.ts
  *
- * Terakhir dibuat setelah migrasi 0003.
+ * Terakhir dibuat setelah migrasi 0003, lalu ditambah dua RPC dari
+ * migrasi 0005 (`cari_item_mirip`, `impor_master_item`). Jalankan perintah
+ * di atas begitu Supabase CLI sudah punya akses token, agar berkas ini
+ * kembali sepenuhnya hasil generate.
  */
 
 export type Json =
@@ -426,6 +429,21 @@ export type Database = {
           satuan_baku: string
           skor: number
         }[]
+      }
+      cari_item_mirip: {
+        Args: { p_batas?: number; p_nama: string }
+        Returns: {
+          aktif: boolean
+          kategori: Database["public"]["Enums"]["kategori_enum"]
+          kode_item: string
+          nama_baku: string
+          satuan_baku: string
+          skor: number
+        }[]
+      }
+      impor_master_item: {
+        Args: { p_baris: Json }
+        Returns: Json
       }
       peran_saya: {
         Args: never
