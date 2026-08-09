@@ -1,8 +1,13 @@
 import type { ReactNode } from 'react'
 
+import { TabBar } from '@/components/TabBar'
+import type { Peran } from '@/lib/peran'
+
 type Props = {
   judul: string
   keterangan?: string
+  /** Bila diisi, tab bar bawah ikut ditampilkan sesuai peran. */
+  peran?: Peran
   children: ReactNode
 }
 
@@ -11,11 +16,8 @@ type Props = {
  *
  * Lebar acuan 380px; di layar lebar isinya hanya melebar sampai batas baca,
  * bukan berubah jadi tata letak lain (CLAUDE.md — Prinsip Desain).
- *
- * Tab bar bawah empat menu belum dipasang di sini: menu bergantung pada peran
- * pengguna, dan peran baru tersedia setelah Sesi 3 (Auth + tabel profil).
  */
-export function AppShell({ judul, keterangan, children }: Props) {
+export function AppShell({ judul, keterangan, peran, children }: Props) {
   return (
     <div className="bg-background flex min-h-dvh flex-col">
       <header className="bg-primary text-primary-foreground area-aman-atas sticky top-0 z-10">
@@ -29,15 +31,21 @@ export function AppShell({ judul, keterangan, children }: Props) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-screen-sm flex-1 px-4 py-4">
+      {/*
+        pb-24 memberi ruang untuk tab bar yang melayang di bawah, supaya
+        isi terakhir tidak tertutup — termasuk di HP yang punya bilah gestur.
+      */}
+      <main
+        className={
+          peran
+            ? 'mx-auto w-full max-w-screen-sm flex-1 px-4 py-4 pb-24'
+            : 'mx-auto w-full max-w-screen-sm flex-1 px-4 py-4'
+        }
+      >
         {children}
       </main>
 
-      <footer className="area-aman-bawah mx-auto w-full max-w-screen-sm px-4 pb-4">
-        <p className="text-muted-foreground text-center text-xs">
-          CitaFIN · versi {__VERSI_APLIKASI__}
-        </p>
-      </footer>
+      {peran ? <TabBar peran={peran} /> : null}
     </div>
   )
 }
