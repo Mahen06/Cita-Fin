@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/buat-ikon.mjs",
+    "prebuild": "node scripts/buat-ikon.mjs || echo 'Ikon tidak dibuat ulang, memakai berkas yang sudah ada.'",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "oxlint src",
