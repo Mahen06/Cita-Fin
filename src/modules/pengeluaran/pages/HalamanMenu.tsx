@@ -46,8 +46,9 @@ const ENTRI: Entri[] = [
   },
   {
     label: 'Banding Toko',
-    keterangan: 'Sesi 7',
+    keterangan: 'Bandingkan 2–3 toko',
     ikon: ArrowLeftRight,
+    ke: '/banding',
   },
   {
     label: 'Audit Harga',

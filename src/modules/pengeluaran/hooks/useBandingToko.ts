@@ -2,36 +2,31 @@ import { useCallback, useEffect, useState } from 'react'
 
 import {
   batasTanggal,
-  ringkas,
-  type HasilCekHarga,
+  susunBanding,
+  type HasilBanding,
   type Periode,
 } from '@/lib/hargaAgregat'
 import { supabase } from '@/lib/supabase'
 
 export {
-  PERIODE,
-  batasTanggal,
-  ringkas,
-  type BarisRiwayat,
-  type HargaToko,
-  type HasilCekHarga,
-  type Periode,
-  type Ringkasan,
-  type Tren,
+  susunBanding,
+  type BarisBanding,
+  type HasilBanding,
+  type SelToko,
 } from '@/lib/hargaAgregat'
 
-/**
- * Membaca riwayat harga satu item.
- *
- * Hanya nota final yang terbaca — `v_riwayat_harga` sudah menyaringnya
- * di database (aturan B9), bukan di sini.
- */
-export function useHargaItem(kodeItem: string | null, periode: Periode) {
-  const [data, setData] = useState<HasilCekHarga | null>(null)
+export function useBandingToko(kodeToko: string[], periode: Periode) {
+  const [data, setData] = useState<HasilBanding | null>(null)
   const [galat, setGalat] = useState<string | null>(null)
 
+  // Dijadikan string supaya larik baru dengan isi sama tidak memicu
+  // pemuatan ulang pada setiap render.
+  const kunci = kodeToko.join(',')
+
   const muat = useCallback(async () => {
-    if (!kodeItem) {
+    const daftar = kunci ? kunci.split(',') : []
+
+    if (daftar.length < 2) {
       setData(null)
       setGalat(null)
       return
@@ -42,9 +37,9 @@ export function useHargaItem(kodeItem: string | null, periode: Periode) {
     let kueri = supabase
       .from('v_riwayat_harga')
       .select('*')
-      .eq('kode_item', kodeItem)
+      .in('kode_toko', daftar)
       .order('tanggal', { ascending: false })
-      .limit(500)
+      .limit(2000)
 
     const batas = batasTanggal(periode)
     if (batas) kueri = kueri.gte('tanggal', batas)
@@ -61,8 +56,8 @@ export function useHargaItem(kodeItem: string | null, periode: Periode) {
       return
     }
 
-    setData(ringkas(hasil ?? []))
-  }, [kodeItem, periode])
+    setData(susunBanding(hasil ?? [], daftar))
+  }, [kunci, periode])
 
   useEffect(() => {
     setData(null)

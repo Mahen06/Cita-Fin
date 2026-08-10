@@ -7,6 +7,7 @@ import { bolehInputNota, bolehKelolaItem, bolehKelolaToko } from '@/lib/peran'
 import type { Peran } from '@/lib/peran'
 import { useAuth } from '@/modules/pengeluaran/hooks/konteksAuth'
 import { PenyediaAuth } from '@/modules/pengeluaran/hooks/useAuth'
+import { HalamanBandingToko } from '@/modules/pengeluaran/pages/HalamanBandingToko'
 import { HalamanCekHarga } from '@/modules/pengeluaran/pages/HalamanCekHarga'
 import { HalamanDetailNota } from '@/modules/pengeluaran/pages/HalamanDetailNota'
 import { HalamanFormItem } from '@/modules/pengeluaran/pages/HalamanFormItem'
@@ -64,6 +65,15 @@ export default function App() {
             element={
               <Layar judul="Laporan" keterangan="Pengeluaran per proyek">
                 <HalamanLaporan />
+              </Layar>
+            }
+          />
+
+          <Route
+            path="/banding"
+            element={
+              <Layar judul="Banding Toko" keterangan="Harga item yang sama di beberapa toko">
+                <HalamanBandingToko />
               </Layar>
             }
           />
