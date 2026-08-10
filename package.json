@@ -1,7 +1,7 @@
 {
   "name": "cita-fin",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "oxlint src",
     "type-check": "tsc -b",
-    "uji": "node --experimental-strip-types --disable-warning=ExperimentalWarning uji/hargaAgregat.uji.ts"
+    "uji": "node --experimental-strip-types --disable-warning=ExperimentalWarning uji/hargaAgregat.uji.ts && node --experimental-strip-types --disable-warning=ExperimentalWarning uji/laporan.uji.ts"
   },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.15",
@@ -19,6 +19,8 @@
     "@tailwindcss/vite": "^4.3.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.31.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
