@@ -1,121 +1,124 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
-import { formatRupiah, formatTanggal, formatTanggalPendek } from '@/lib/format'
-import type { Laporan } from '@/lib/laporan'
+import { formatTanggal } from './format.ts'
+import { NAMA_PERUSAHAAN, type Laporan, type ProyekLaporan } from './laporan.ts'
 
 export type Judul = {
-  namaProyek: string
   dari: string
   sampai: string
   kategori: string
+  /** Tampilkan kolom Toko/Vendor di antara Keterangan dan Harga. */
+  denganToko: boolean
+}
+
+const HIJAU: [number, number, number] = [15, 118, 110]
+const ABU: [number, number, number] = [240, 240, 240]
+
+/** `1250000` → `1,250,000`. Mengikuti gaya angka pada laporan lama. */
+function angkaLaporan(nilai: number): string {
+  const bulat = Math.round(nilai)
+  const tanda = bulat < 0 ? '-' : ''
+  return (
+    tanda +
+    Math.abs(bulat)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  )
 }
 
 /**
  * Menyusun PDF laporan pengeluaran.
  *
- * Dikelompokkan per nota, bukan per item: laporan Excel lama berbentuk
- * begitu dan penerimanya mengenali bentuk itu (F4).
+ * Bentuknya mengikuti laporan Excel lama: satu blok per proyek, dua blok
+ * berdampingan dalam satu baris, satu baris tabel per nota, dan total di
+ * kaki tiap blok. Penerima laporan mengenali bentuk ini — itulah kriteria
+ * terima F4, bukan kelengkapan datanya.
+ *
+ * Rincian per item tetap ada di database dan di layar; laporan ini
+ * meringkasnya, tidak menggantikannya.
  */
 export function buatPdf(laporan: Laporan, judul: Judul): Blob {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
-  const lebar = doc.internal.pageSize.getWidth()
+  const lebarHalaman = doc.internal.pageSize.getWidth()
+  const tinggiHalaman = doc.internal.pageSize.getHeight()
 
-  doc.setFontSize(14)
-  doc.text('LAPORAN PENGELUARAN PROYEK', lebar / 2, 40, { align: 'center' })
+  const tepi = 28
+  const jarak = 14
+  const lebarBlok = (lebarHalaman - tepi * 2 - jarak) / 2
 
-  doc.setFontSize(10)
-  doc.text(judul.namaProyek, lebar / 2, 58, { align: 'center' })
+  doc.setFontSize(11)
+  doc.setFont('helvetica', 'bold')
   doc.text(
-    `${formatTanggal(judul.dari)} — ${formatTanggal(judul.sampai)}`,
-    lebar / 2,
-    72,
-    { align: 'center' },
+    `${NAMA_PERUSAHAAN} ${labelPeriode(judul.dari, judul.sampai)}`,
+    tepi,
+    36,
   )
+
   if (judul.kategori) {
-    doc.text(`Kategori: ${judul.kategori}`, lebar / 2, 86, { align: 'center' })
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.text(`Kategori: ${judul.kategori}`, tepi, 50)
   }
 
-  // Ringkasan per kategori
-  autoTable(doc, {
-    startY: judul.kategori ? 100 : 88,
-    head: [['Kategori', 'Jumlah']],
-    body: laporan.perKategori.map((k) => [k.kategori, formatRupiah(k.total)]),
-    foot: [['TOTAL', formatRupiah(laporan.total)]],
-    theme: 'grid',
-    styles: { fontSize: 9, cellPadding: 4 },
-    headStyles: { fillColor: [15, 118, 110] },
-    footStyles: { fillColor: [240, 240, 240], textColor: 20, fontStyle: 'bold' },
-    columnStyles: { 1: { halign: 'right' } },
-    margin: { left: 40, right: 40 },
-  })
+  let y = judul.kategori ? 62 : 50
 
-  // Rincian per nota
-  const badan: (string | number)[][] = []
+  // Rekap seluruh proyek — permintaan "bisa langsung direkap semuanya".
+  if (laporan.perProyek.length > 1) {
+    autoTable(doc, {
+      startY: y,
+      head: [['Rekap Proyek', 'Total']],
+      body: laporan.perProyek.map((p) => [
+        p.nama_proyek,
+        angkaLaporan(p.total),
+      ]),
+      foot: [['TOTAL SELURUH PROYEK', angkaLaporan(laporan.total)]],
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 3, lineColor: [180, 180, 180] },
+      headStyles: { fillColor: HIJAU, fontSize: 8 },
+      footStyles: { fillColor: ABU, textColor: 20, fontStyle: 'bold' },
+      columnStyles: { 1: { halign: 'right', cellWidth: 90 } },
+      margin: { left: tepi, right: tepi },
+    })
 
-  for (const nota of laporan.nota) {
-    badan.push([
-      {
-        content: `${formatTanggalPendek(nota.tanggal)}  ·  ${nota.nama_toko}${
-          nota.pkp ? ' (PKP)' : ''
-        }${nota.no_nota_toko ? `  ·  No. ${nota.no_nota_toko}` : ''}  ·  ${nota.metode_bayar}`,
-        colSpan: 5,
-        styles: { fontStyle: 'bold', fillColor: [245, 245, 245] },
-      } as unknown as string,
-    ])
+    y = akhirTabel(doc) + 18
+  }
 
-    for (const b of nota.baris) {
-      badan.push([
-        b.nama_baku,
-        `${b.qty} ${b.satuan_baku}`,
-        formatRupiah(b.harga_satuan),
-        b.kategori,
-        formatRupiah(b.subtotal),
-      ])
+  // Blok proyek, dua per baris.
+  for (let i = 0; i < laporan.perProyek.length; i += 2) {
+    const kiri = laporan.perProyek[i]
+    const kanan = laporan.perProyek[i + 1]
+
+    // Pindah halaman bila sisa ruang tidak cukup untuk kepala blok.
+    if (y > tinggiHalaman - 120) {
+      doc.addPage()
+      y = 40
     }
 
-    badan.push([
-      {
-        content: nota.tersaring ? 'Jumlah baris tersaring' : 'Total nota',
-        colSpan: 4,
-        styles: { halign: 'right', fontStyle: 'bold' },
-      } as unknown as string,
-      {
-        content: formatRupiah(nota.jumlah),
-        styles: { halign: 'right', fontStyle: 'bold' },
-      } as unknown as string,
-    ])
+    const yKiri = gambarBlok(doc, kiri, y, tepi, lebarBlok, judul.denganToko)
+    const yKanan = kanan
+      ? gambarBlok(
+          doc,
+          kanan,
+          y,
+          tepi + lebarBlok + jarak,
+          lebarBlok,
+          judul.denganToko,
+        )
+      : y
+
+    y = Math.max(yKiri, yKanan) + 18
   }
 
-  // `lastAutoTable` disisipkan jspdf-autotable ke objek dokumen saat
-  // berjalan, jadi harus dibaca lewat penegasan tipe.
-  const akhirTabelPertama = (
-    doc as unknown as { lastAutoTable: { finalY: number } }
-  ).lastAutoTable.finalY
-
-  autoTable(doc, {
-    startY: akhirTabelPertama + 20,
-    head: [['Item', 'Qty', 'Harga Satuan', 'Kategori', 'Subtotal']],
-    body: badan,
-    theme: 'grid',
-    styles: { fontSize: 8, cellPadding: 3 },
-    headStyles: { fillColor: [15, 118, 110] },
-    columnStyles: {
-      1: { halign: 'right' },
-      2: { halign: 'right' },
-      4: { halign: 'right' },
-    },
-    margin: { left: 40, right: 40 },
-  })
-
-  const jmlHalaman = doc.getNumberOfPages()
-  for (let i = 1; i <= jmlHalaman; i++) {
+  const jml = doc.getNumberOfPages()
+  for (let i = 1; i <= jml; i++) {
     doc.setPage(i)
-    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
     doc.text(
-      `Halaman ${i} dari ${jmlHalaman}  ·  ${laporan.jmlNota} nota  ·  dicetak ${formatTanggal(new Date())}`,
-      lebar / 2,
-      doc.internal.pageSize.getHeight() - 24,
+      `Halaman ${i} dari ${jml}  ·  ${laporan.jmlNota} nota  ·  dicetak ${formatTanggal(new Date())}`,
+      lebarHalaman / 2,
+      tinggiHalaman - 18,
       { align: 'center' },
     )
   }
@@ -123,25 +126,128 @@ export function buatPdf(laporan: Laporan, judul: Judul): Blob {
   return doc.output('blob')
 }
 
-/** CSV rata, satu baris per item — untuk dibuka kembali di Excel. */
-export function buatCsv(laporan: Laporan): Blob {
-  const kolom = [
-    'tanggal',
-    'toko',
-    'pkp',
-    'no_nota',
-    'metode_bayar',
-    'kode_item',
-    'nama_item',
-    'kategori',
-    'qty',
-    'satuan',
-    'harga_satuan',
-    'subtotal',
-  ]
+/** Menggambar satu blok proyek, mengembalikan posisi Y setelah blok. */
+function gambarBlok(
+  doc: jsPDF,
+  proyek: ProyekLaporan,
+  y: number,
+  x: number,
+  lebar: number,
+  denganToko: boolean,
+): number {
+  const kepala = denganToko
+    ? ['No', 'Keterangan', 'Toko', 'Harga']
+    : ['No', 'Keterangan', 'Harga']
 
+  const isi = proyek.nota.map((n, i) =>
+    denganToko
+      ? [String(i + 1), n.uraian, n.nama_toko, angkaLaporan(n.jumlah)]
+      : [String(i + 1), n.uraian, angkaLaporan(n.jumlah)],
+  )
+
+  const kolomHarga = denganToko ? 3 : 2
+
+  autoTable(doc, {
+    startY: y,
+    // Nama proyek jadi kepala blok, seperti pada laporan lama.
+    head: [
+      [
+        {
+          content: proyek.nama_proyek,
+          colSpan: kepala.length,
+          styles: {
+            halign: 'center',
+            fillColor: ABU,
+            textColor: 20,
+            fontStyle: 'bold',
+          },
+        },
+      ],
+      kepala,
+    ] as never,
+    body: isi,
+    foot: [
+      [
+        {
+          content: 'Total',
+          colSpan: kepala.length - 1,
+          styles: { halign: 'center', fontStyle: 'bold' },
+        },
+        {
+          content: angkaLaporan(proyek.total),
+          styles: { halign: 'right', fontStyle: 'bold' },
+        },
+      ],
+    ] as never,
+    theme: 'grid',
+    styles: {
+      fontSize: 7,
+      cellPadding: 3,
+      lineColor: [150, 150, 150],
+      lineWidth: 0.4,
+      overflow: 'linebreak',
+      valign: 'middle',
+    },
+    headStyles: { fillColor: ABU, textColor: 20, fontStyle: 'bold' },
+    footStyles: { fillColor: [255, 255, 255], textColor: 20 },
+    columnStyles: {
+      0: { cellWidth: 18, halign: 'center' },
+      [kolomHarga]: { cellWidth: 58, halign: 'right' },
+      ...(denganToko ? { 2: { cellWidth: 62 } } : {}),
+    },
+    margin: { left: x },
+    tableWidth: lebar,
+  })
+
+  return akhirTabel(doc)
+}
+
+/** `lastAutoTable` disisipkan jspdf-autotable ke dokumen saat berjalan. */
+function akhirTabel(doc: jsPDF): number {
+  return (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable
+    .finalY
+}
+
+function labelPeriode(dari: string, sampai: string): string {
+  return dari === sampai
+    ? formatTanggal(dari).toUpperCase()
+    : `${formatTanggal(dari).toUpperCase()} — ${formatTanggal(sampai).toUpperCase()}`
+}
+
+/**
+ * CSV rekap: satu baris per nota, mengikuti bentuk laporan cetak.
+ * Inilah yang dibuka penerima laporan di Excel.
+ */
+export function buatCsvRekap(laporan: Laporan): Blob {
+  const baris = laporan.perProyek.flatMap((p) => [
+    ...p.nota.map((n, i) => [
+      p.nama_proyek,
+      String(i + 1),
+      n.tanggal,
+      n.uraian,
+      n.nama_toko,
+      String(Math.round(n.jumlah)),
+    ]),
+    [p.nama_proyek, '', '', 'Total', '', String(Math.round(p.total))],
+  ])
+
+  return csv(
+    ['proyek', 'no', 'tanggal', 'keterangan', 'toko', 'harga'],
+    baris,
+  )
+}
+
+/**
+ * CSV rinci: satu baris per item.
+ *
+ * Sengaja tetap disediakan. Rincian per material inilah yang menghidupkan
+ * Cek Harga dan Banding Toko, dan yang membuat pertanyaan harga bisa
+ * dijawab — laporan rekap tidak menggantikannya.
+ */
+export function buatCsvRinci(laporan: Laporan): Blob {
   const baris = laporan.nota.flatMap((nota) =>
     nota.baris.map((b) => [
+      nota.nama_proyek,
       nota.tanggal,
       nota.nama_toko,
       nota.pkp ? 'YA' : 'TIDAK',
@@ -157,10 +263,28 @@ export function buatCsv(laporan: Laporan): Blob {
     ]),
   )
 
-  const isi = [kolom, ...baris]
-    .map((r) => r.map(kutip).join(','))
-    .join('\r\n')
+  return csv(
+    [
+      'proyek',
+      'tanggal',
+      'toko',
+      'pkp',
+      'no_nota',
+      'metode_bayar',
+      'kode_item',
+      'nama_item',
+      'kategori',
+      'qty',
+      'satuan',
+      'harga_satuan',
+      'subtotal',
+    ],
+    baris,
+  )
+}
 
+function csv(kolom: string[], baris: string[][]): Blob {
+  const isi = [kolom, ...baris].map((r) => r.map(kutip).join(',')).join('\r\n')
   // BOM supaya Excel membaca huruf beraksen dengan benar.
   return new Blob(['﻿' + isi], { type: 'text/csv;charset=utf-8' })
 }
@@ -172,10 +296,6 @@ function kutip(nilai: string): string {
 /**
  * Membagikan berkas lewat lembar berbagi bawaan HP bila tersedia,
  * kalau tidak jatuh ke unduhan biasa.
- *
- * Berbagi langsung ke WhatsApp adalah cara laporan ini benar-benar
- * dikirim di lapangan (F4) — mengunduh lalu mencarinya di berkas
- * adalah tiga langkah tambahan yang mudah gagal.
  */
 export async function bagikanAtauUnduh(
   blob: Blob,

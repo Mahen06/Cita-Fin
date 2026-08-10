@@ -1,4 +1,4 @@
-import { Download, FileText, Loader2, Share2 } from 'lucide-react'
+import { Download, FileText, Loader2, Share2, Table2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { StatusGalat } from '@/components/StatusGalat'
@@ -35,7 +35,8 @@ export function HalamanLaporan() {
   const [dari, setDari] = useState(awalBulanIni)
   const [sampai, setSampai] = useState(hariIni)
   const [kategori, setKategori] = useState<Kategori[]>([])
-  const [sibuk, setSibuk] = useState<'pdf' | 'csv' | null>(null)
+  const [denganToko, setDenganToko] = useState(true)
+  const [sibuk, setSibuk] = useState<'pdf' | 'csv' | 'rinci' | null>(null)
   const [kabar, setKabar] = useState<string | null>(null)
 
   const saringan = useMemo(
@@ -49,7 +50,7 @@ export function HalamanLaporan() {
     proyek?.find((p) => p.kode_proyek === kodeProyek)?.nama_proyek ??
     'Semua proyek'
 
-  async function ekspor(jenis: 'pdf' | 'csv') {
+  async function ekspor(jenis: 'pdf' | 'csv' | 'rinci') {
     if (!data || sibuk) return
 
     setSibuk(jenis)
@@ -59,29 +60,33 @@ export function HalamanLaporan() {
       /*
         jspdf berukuran besar dan hanya dipakai di sini. Dimuat saat
         tombol ditekan supaya tidak ikut terunduh setiap kali aplikasi
-        dibuka — beda 150 kB terpampat pada jaringan seluler.
+        dibuka — beda 140 kB terpampat pada jaringan seluler.
       */
-      const { bagikanAtauUnduh, buatCsv, buatPdf } = await import('@/lib/ekspor')
+      const { bagikanAtauUnduh, buatCsvRekap, buatCsvRinci, buatPdf } =
+        await import('@/lib/ekspor')
 
       const tanda = `${namaProyek.replace(/\W+/g, '-')}_${dari}_${sampai}`
 
-      const hasil =
+      const berkas =
         jenis === 'pdf'
-          ? await bagikanAtauUnduh(
-              buatPdf(data, {
-                namaProyek,
+          ? {
+              blob: buatPdf(data, {
                 dari,
                 sampai,
                 kategori: kategori.length ? kategori.join(', ') : '',
+                denganToko,
               }),
-              `Laporan_${tanda}.pdf`,
-              `Laporan Pengeluaran ${namaProyek}`,
-            )
-          : await bagikanAtauUnduh(
-              buatCsv(data),
-              `Laporan_${tanda}.csv`,
-              `Laporan Pengeluaran ${namaProyek}`,
-            )
+              nama: `Laporan_${tanda}.pdf`,
+            }
+          : jenis === 'csv'
+            ? { blob: buatCsvRekap(data), nama: `Laporan_${tanda}.csv` }
+            : { blob: buatCsvRinci(data), nama: `Rincian_${tanda}.csv` }
+
+      const hasil = await bagikanAtauUnduh(
+        berkas.blob,
+        berkas.nama,
+        `Laporan Pengeluaran ${namaProyek}`,
+      )
 
       setKabar(
         hasil === 'dibagikan'
@@ -224,31 +229,60 @@ export function HalamanLaporan() {
             </p>
           ) : null}
 
-          <div className="flex gap-2">
+          <div className="space-y-2">
+            <label className="flex min-h-11 items-center gap-3 text-sm">
+              <input
+                type="checkbox"
+                className="size-5 shrink-0"
+                checked={denganToko}
+                onChange={(e) => setDenganToko(e.target.checked)}
+              />
+              <span className="text-balance">
+                Sertakan kolom Toko/Vendor di berkas cetak
+              </span>
+            </label>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => void ekspor('csv')}
+                disabled={sibuk !== null}
+              >
+                {sibuk === 'csv' ? (
+                  <Loader2 className="animate-spin" aria-hidden />
+                ) : (
+                  <Download aria-hidden />
+                )}
+                CSV rekap
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => void ekspor('pdf')}
+                disabled={sibuk !== null}
+              >
+                {sibuk === 'pdf' ? (
+                  <Loader2 className="animate-spin" aria-hidden />
+                ) : (
+                  <Share2 aria-hidden />
+                )}
+                PDF
+              </Button>
+            </div>
+
             <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => void ekspor('csv')}
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => void ekspor('rinci')}
               disabled={sibuk !== null}
             >
-              {sibuk === 'csv' ? (
+              {sibuk === 'rinci' ? (
                 <Loader2 className="animate-spin" aria-hidden />
               ) : (
-                <Download aria-hidden />
+                <Table2 aria-hidden />
               )}
-              CSV
-            </Button>
-            <Button
-              className="flex-1"
-              onClick={() => void ekspor('pdf')}
-              disabled={sibuk !== null}
-            >
-              {sibuk === 'pdf' ? (
-                <Loader2 className="animate-spin" aria-hidden />
-              ) : (
-                <Share2 aria-hidden />
-              )}
-              PDF
+              CSV rinci per item
             </Button>
           </div>
 
@@ -256,67 +290,89 @@ export function HalamanLaporan() {
             <p className="text-muted-foreground text-center text-xs">{kabar}</p>
           ) : null}
 
-          <ul className="space-y-2">
-            {data.nota.map((nota) => (
-              <li key={nota.id_nota}>
-                <Card className="gap-0 py-3">
-                  <CardContent className="space-y-2 px-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-medium break-words">
-                          {nota.nama_toko}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          {formatTanggalPendek(nota.tanggal)}
-                          {nota.no_nota_toko ? ` · ${nota.no_nota_toko}` : ''} ·{' '}
-                          {nota.metode_bayar}
-                        </p>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="font-semibold">
-                          {formatRupiah(nota.jumlah)}
-                        </p>
-                        {nota.pkp ? (
-                          <Badge variant="outline" className="mt-1">
-                            PKP
-                          </Badge>
+          {/* Tampilan layar mengikuti bentuk cetak: blok per proyek. */}
+          {data.perProyek.map((proyek) => (
+            <div key={proyek.kode_proyek} className="space-y-2">
+              <div className="flex items-baseline justify-between gap-2 border-b pb-1">
+                <h2 className="min-w-0 font-medium break-words">
+                  {proyek.nama_proyek}
+                </h2>
+                <span className="shrink-0 text-sm font-semibold">
+                  {formatRupiah(proyek.total)}
+                </span>
+              </div>
+
+              <ul className="space-y-2">
+                {proyek.nota.map((nota, i) => (
+                  <li key={nota.id_nota}>
+                    <Card className="gap-0 py-3">
+                      <CardContent className="space-y-2 px-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm break-words">
+                              <span className="text-muted-foreground">
+                                {i + 1}.{' '}
+                              </span>
+                              {nota.uraian}
+                            </p>
+                            <p className="text-muted-foreground mt-1 text-xs">
+                              {formatTanggalPendek(nota.tanggal)} ·{' '}
+                              {nota.nama_toko}
+                              {nota.no_nota_toko ? ` · ${nota.no_nota_toko}` : ''}
+                            </p>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="font-semibold">
+                              {formatRupiah(nota.jumlah)}
+                            </p>
+                            {nota.pkp ? (
+                              <Badge variant="outline" className="mt-1">
+                                PKP
+                              </Badge>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <details className="text-xs">
+                          <summary className="text-muted-foreground min-h-8 cursor-pointer list-none py-1">
+                            Rincian {nota.baris.length} item
+                          </summary>
+                          <ul className="mt-1 space-y-1 border-t pt-2">
+                            {nota.baris.map((b, j) => (
+                              <li
+                                key={`${b.kode_item}-${j}`}
+                                className="flex items-start justify-between gap-2"
+                              >
+                                <span className="min-w-0 break-words">
+                                  {b.nama_baku}
+                                  <span className="text-muted-foreground">
+                                    {' '}
+                                    · {b.qty} {b.satuan_baku} ×{' '}
+                                    {formatRupiah(b.harga_satuan)}
+                                  </span>
+                                </span>
+                                <span className="shrink-0 font-medium">
+                                  {formatRupiah(b.subtotal)}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+
+                        {nota.tersaring ? (
+                          <p className="text-muted-foreground text-xs">
+                            Sebagian baris nota ini tidak ikut karena penyaring
+                            kategori. Total nota fisik{' '}
+                            {formatRupiah(nota.total_nota)}.
+                          </p>
                         ) : null}
-                      </div>
-                    </div>
-
-                    <ul className="space-y-1 border-t pt-2">
-                      {nota.baris.map((b, i) => (
-                        <li
-                          key={`${b.kode_item}-${i}`}
-                          className="flex items-start justify-between gap-2 text-xs"
-                        >
-                          <span className="min-w-0 break-words">
-                            {b.nama_baku}
-                            <span className="text-muted-foreground">
-                              {' '}
-                              · {b.qty} {b.satuan_baku} ×{' '}
-                              {formatRupiah(b.harga_satuan)}
-                            </span>
-                          </span>
-                          <span className="shrink-0 font-medium">
-                            {formatRupiah(b.subtotal)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    {nota.tersaring ? (
-                      <p className="text-muted-foreground text-xs">
-                        Sebagian baris nota ini tidak ikut karena penyaring
-                        kategori. Total nota fisik{' '}
-                        {formatRupiah(nota.total_nota)}.
-                      </p>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              </li>
-            ))}
-          </ul>
+                      </CardContent>
+                    </Card>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
 
           <p
             className={cn(

@@ -47,7 +47,7 @@ export function useLaporan(saringan: SaringanLaporan | null) {
     let kueri = supabase
       .from('nota')
       .select(
-        `id_nota, tanggal, no_nota_toko, metode_bayar, total_nota,
+        `id_nota, tanggal, no_nota_toko, metode_bayar, catatan, total_nota,
          master_toko(nama_toko, pkp),
          master_proyek(kode_proyek, nama_proyek),
          nota_detail(qty, harga_satuan, subtotal, urutan,

@@ -316,6 +316,21 @@ export function HalamanInputNota() {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="catatan">Keterangan nota</Label>
+            <Input
+              id="catatan"
+              value={header.catatan}
+              onChange={(e) => setHeader({ ...header, catatan: e.target.value })}
+              placeholder="Opsional — misal: Pembelian semen dan pasir"
+            />
+            <p className="text-muted-foreground text-xs text-balance">
+              Teks ini yang muncul di kolom Keterangan laporan cetak. Kalau
+              dikosongkan, uraiannya disusun otomatis dari daftar item di
+              bawah.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="metode">Metode bayar</Label>
             <Select
               id="metode"

@@ -124,5 +124,48 @@ const tanpaItem = susunLaporan([
 ] as unknown as NotaMentah[])
 cek('baris tanpa master item diabaikan', tanpaItem.jmlNota === 0, tanpaItem.jmlNota)
 
+
+console.log('\nuraianNota() & pengelompokan proyek')
+cek(
+  'uraian otomatis dari daftar item',
+  penuh.nota[1].uraian === 'Semen 10 sak, Ongkos Kirim 1 ls, Operasional 1 ls',
+  penuh.nota[1].uraian,
+)
+cek('ditandai otomatis', penuh.nota[1].uraianOtomatis === true)
+const ribuan = susunLaporan([
+  {
+    ...mentah[1],
+    nota_detail: [
+      { qty: '1320', harga_satuan: '10000', subtotal: '13200000', urutan: 1,
+        master_item: item('MTL-9', 'Batu Andesit 15x30', 'MATERIAL', 'Lembar') },
+    ],
+  },
+] as unknown as NotaMentah[]).nota[0].uraian
+cek('qty ribuan diformat gaya Indonesia',
+  ribuan === 'Batu Andesit 15x30 1.320 Lembar', ribuan)
+
+const denganCatatan = susunLaporan([
+  { ...mentah[0], catatan: 'Pembelian Nat Sika Tile Grout Sand Gray 1Kg 5 Biji' },
+] as unknown as NotaMentah[])
+cek('catatan finance menang atas uraian otomatis',
+  denganCatatan.nota[0].uraian === 'Pembelian Nat Sika Tile Grout Sand Gray 1Kg 5 Biji')
+cek('ditandai bukan otomatis', denganCatatan.nota[0].uraianOtomatis === false)
+cek('catatan berisi spasi saja tetap dianggap kosong',
+  susunLaporan([{ ...mentah[0], catatan: '   ' }] as unknown as NotaMentah[])
+    .nota[0].uraianOtomatis === true)
+
+const duaProyek = susunLaporan([
+  mentah[0],
+  { ...mentah[1], master_proyek: { kode_proyek: 'P2', nama_proyek: 'AV-House' } },
+] as unknown as NotaMentah[])
+cek('dua blok proyek', duaProyek.perProyek.length === 2,
+  duaProyek.perProyek.map((p) => p.nama_proyek))
+cek('blok urut menurut nama proyek', duaProyek.perProyek[0].nama_proyek === 'AV-House')
+cek('total blok AV-House 200.000', duaProyek.perProyek[0].total === 200000)
+cek('total blok Proyek Satu 750.000', duaProyek.perProyek[1].total === 750000)
+cek('jumlah total seluruh blok sama dengan total laporan',
+  duaProyek.perProyek.reduce((a, p) => a + p.total, 0) === duaProyek.total)
+cek('satu proyek tetap menghasilkan satu blok', penuh.perProyek.length === 1)
+
 console.log(`\n${lulus} lulus, ${gagal} gagal`)
 process.exit(gagal > 0 ? 1 : 0)
